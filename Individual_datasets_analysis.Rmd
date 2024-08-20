@@ -1113,9 +1113,6 @@ Join AltEntrocyte, AltEntrocyte2, AltEntrocyte3 and Enterocyte as well as imment
 Join all crypt cell types
 mural cell fibroblasts can stay as they are as well as myofb and FB3
 
-```{r}
-
-```
 
 
 ```{r}
@@ -1484,8 +1481,6 @@ Fibroblasts.dss <- subset(Fibroblasts.dss, subset = nFeature_RNA > 300 & nFeatur
 
 ```{r}
 
-
-
 Fibroblasts <- merge(Fibroblasts.ctrl, Fibroblasts.dss, add.cell.ids = c("ctrl", "DSS"))
 
 #Fibroblasts <- list(Fibroblasts.ctrl, Fibroblasts.dss)
@@ -1531,6 +1526,7 @@ Rgs5<- Pericytes
 
 
 Clustering cells from healthy mice revealed 13 distinct clusters (Figure 3A and 3C ). We readily identified clusters showing specific expression of epithelial (Epcam and Krt19), pericyte (Rgs5 and Pdgfrb), vascular endothelial (Pecam1 / Cd31), lymphatic endothelial (Lyve1), and glial (S100b and Gfap) and hematopoietic cell markers (Cd52 and Ptprc / Cd45) (Figure 3C). Cluster 2, a small cluster of 32 cells, expressed markers associated with enteric smooth muscle (Myh11 and Des) and interstitial cells of Cajal (ICCs) (Kit and Ano1
+
 ```{r}
 # CD81+ Fibroblasts (Trophocytes, Crypt-Bottom Fibroblasts, MRISCs, pi16+ Fibroblasts)
 #
@@ -1562,132 +1558,6 @@ Glial <- c("Gfap", "Fabp7", "S100b")
 Endothelial <- "Pecam1"
 
 ICC<- c("Kit", "Ano1")
-
 ```
 
-
-```{r}
-Fibroblasts.ctrl <- AddModuleScore(object=Fibroblasts.ctrl,
-                                 features= CD81_Fibroblasts,
-                                 name = "CD81_Fibroblasts")
-
-Fibroblasts.ctrl <- AddModuleScore(object=Fibroblasts.ctrl,
-                                 features= PDGFRalpha_hi_Fibroblasts,
-                                 name = "PDGFRalpha_hi_Fibroblasts")
-
-Fibroblasts.ctrl <- AddModuleScore(object=Fibroblasts.ctrl,
-                                 features= c("Col15a1", "Igfbp5", "Fgfr2"),
-                                 name = "PDGFRalpha_lo_CD81_neg_Fibroblasts")
-
-Fibroblasts.ctrl <- AddModuleScore(object=Fibroblasts.ctrl,
-                                 features= Pericytes,
-                                 name = "Pericytes")
-
-Fibroblasts.ctrl <- AddModuleScore(object=Fibroblasts.ctrl,
-                                 features= Smooth_Muscle_Cells,
-                                 name = "Smooth_Muscle_Cells")
-
-
-Fibroblasts.ctrl <- AddModuleScore(object=Fibroblasts.ctrl,
-                                 features= LEC,
-                                 name = "LEC")
-
-Fibroblasts.ctrl <- AddModuleScore(object=Fibroblasts.ctrl,
-                                 features= Glial,
-                                 name = "Glial")
-
-Fibroblasts.ctrl <- AddModuleScore(object=Fibroblasts.ctrl,
-                                 features= Endothelial,
-                                 name = "Endothelial")
-
-Fibroblasts.ctrl <- AddModuleScore(object=Fibroblasts.ctrl,
-                                 features= ICC,
-                                 name = "ICC")
-```
-
-
-Plot
-
-```{r}
-seu.int <- AddModuleScore(seu.int, features = sig.list, name = "_score")
-names(seu.int@meta.data)[grep("_score", names(seu.int@meta.data))] <- names(sig.list)
-FeaturePlot(seu.int, features = names(sig.list))
-```
-
-
-```{r}
-library(RColorBrewer)
-
-# Plot scores
-FeaturePlot(Fibroblasts.ctrl,
-            features = Endothelial, label = TRUE, repel = TRUE) +
-            scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdBu")))
-
-# Plot scores
-FeaturePlot(Fibroblasts.ctrl,
-            features = c("CD81_Fibroblasts1","PDGFRalpha_hi_Fibroblasts1", "PDGFRalpha_lo_CD81_neg_Fibroblasts1"), label = TRUE, repel = TRUE) +
-            scale_colour_gradientn(colours = rev(brewer.pal(n = 11, name = "RdBu")))
-
-
-```
-
-
-
-```{r}
-g <- c("Pdpn", "Cd81","Pcolce2","C3", "Cd55","Grem1","Agt", "Lpl", "Procr",  "Acta2", "Adamdec1", "Plvap", "Ano1", 
-       "Kit",  "Ptn", "Cnn1", "Mylk", "Rgs5", "Lyve1", "Cd52", "Plp1", "Epcam")
-
-markers <- c("Pdpn",  "Cd81","Pcolce2","C3", "Cd55","Grem1","Agt", "Lpl", "Procr",  "Acta2", "Adamdec1", "Plvap", "Ano1", 
-       "Kit",  "Ptn", "Cnn1", "Mylk", "Rgs5", "Lyve1", "Cd52", "Plp1", "Epcam")
-
-DotPlot(all.anchors.cluster, g, cols =c("midnightblue", "darkorange1")) + theme(axis.text.x = element_text(angle = 70, hjust = 1))
-
-
-```
-
-```{r}
-FeaturePlot(Fibroblasts.ctrl, features = markers)
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-
-#create a list of Seurat objects and perform preprocessing
-data.list <- lapply(X = list(Fibroblasts.ctrl, Fibroblasts.dss), FUN = function(x) {
-# making a mitochondria percentage column (mt/MT/Mt based on gtf)
-# Filtering, normalization and feature detection
-x <- NormalizeData(x)
-x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
-})
-
-
-# find integration anchors ...
-pancreas.anchors <- FindIntegrationAnchors(object.list = data.list, dims = 1:30)
-# ... and integrate
-pancreas.integrated <- IntegrateData(anchorset = pancreas.anchors)
-# switch to integration assay
-DefaultAssay(pancreas.integrated) <- "integrated"
-
-# Standard workflow for visualization and clustering
-pancreas.integrated <- ScaleData(pancreas.integrated, verbose = FALSE) 
-pancreas.integrated <- RunPCA(pancreas.integrated, assay = "integrated", npcs = 30, verbose = FALSE) 
-pancreas.integrated <- RunUMAP(pancreas.integrated, reduction = "pca", dims = 1:30, verbose = FALSE)
-
-pancreas.integrated <- FindNeighbors(data.combined, reduction = "pca", dims = 1:15) 
-pancreas.integrated <- FindClusters(data.combined, resolution = 0.5)
-
-# Number of cells in each condition
-table(pancreas.integrated@meta.data$tech) table(pancreas.integrated@meta.data$tech, pancreas.integrated@meta.data$celltype)
-# Visualization
-p1 <- DimPlot(pancreas.integrated, reduction = "umap", group.by = "Treatment")
-p2 <- DimPlot(pancreas.integrated, reduction = "umap", group.by = "celltype", label = TRUE, repel = TRUE) + NoLegend()
-p3 <- DimPlot(pancreas.integrated, reduction = "umap", split.by = " tech")
-p1 + p2 + p3
-```
 
