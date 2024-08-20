@@ -1,0 +1,378 @@
+---
+title: "Integration_LI_datasets"
+output: html_document
+date: "2024-08-09"
+---
+In Colon(LI)
+I have 5 datasets with DSS model colitis and 2 at homeostasis
+
+DSS datasets:
+1. Stroma and Epithelial. 
+2. Stroma Only
+3. Epithelial, Immune and Stroma
+4. Fibroblasts
+
+5. 	Longitudinal single cell RNA-seq of the inflamed colon (Smartseq-2) -> To be integrated later
+
+1. Check cell type annotations. Define gene cell markers and check
+#Load objects(Quality controlled and preliminary annotated)
+```{r}
+Epi_Imm_Stro_colon <- readRDS("~/Mouse_Atlas_Intestine/Epi_Imm_Stro_colon.rds")
+Colonic_Stroma <- readRDS("~/Mouse_Atlas_Intestine/Colonic_Stroma.rds")
+Fibroblasts_ctrl <- readRDS("~/Mouse_Atlas_Intestine/Fibroblasts_ctrl.rds")
+Fibroblasts_DSS <- readRDS("~/Mouse_Atlas_Intestine/Fibroblasts_DSS.rds")
+Stromal_Colon <- readRDS("~/Mouse_Atlas_Intestine/Stromal_Colon.rds")
+```
+
+Match cell types annotations
+```{r}
+#ICCajal
+# Epi_Imm_Stro_colon dataset
+Epi_Imm_Stro_colon$celltype_integration <- gsub("ICCajal|ICC 1|ICC 2", "ICC", Epi_Imm_Stro_colon$celltype_integration)
+# Fibroblasts_ctrl dataset
+Fibroblasts_ctrl$celltype_integration <- gsub("ICC 1|ICC 2", "ICC", Fibroblasts_ctrl$celltype_integration)
+# Fibroblasts.dss dataset
+Fibroblasts_DSS$celltype_integration <- gsub("ICCajal|ICC 1|ICC 2", "ICC", Fibroblasts_DSS$celltype_integration)
+# Stromal_Colon dataset
+Stromal_Colon$celltype_integration <- gsub("ICC 1|ICC 2", "ICC", Stromal_Colon$celltype_integration)
+# Colonic_Stroma dataset
+Colonic_Stroma$celltype_integration <- gsub("ICC 1|ICC 2", "ICC", Colonic_Stroma$celltype_integration)
+
+#LEC and Lymphendo
+# Fibroblasts_ctrl dataset
+Epi_Imm_Stro_colon$celltype_integration <- gsub("LymphEndo", "LEC", Epi_Imm_Stro_colon$celltype_integration)
+Fibroblasts_DSS$celltype_integration <- gsub("LymphEndo", "LEC", Fibroblasts_DSS$celltype_integration)
+Fibroblasts_ctrl$celltype_integration <- gsub("LymphEndo", "LEC", Fibroblasts_ctrl$celltype_integration)
+Colonic_Stroma$celltype_integration <- gsub("LymphEndo", "LEC", Colonic_Stroma$celltype_integration)
+
+
+#BEC and vscular endothelial
+# Fibroblasts.dss dataset
+Fibroblasts_DSS$celltype_integration <- gsub("VascEndo", "BEC", Fibroblasts_DSS$celltype_integration)
+Fibroblasts_ctrl$celltype_integration <- gsub("VascEndo", "BEC", Fibroblasts_ctrl$celltype_integration)
+# Colonic_Stroma dataset
+Colonic_Stroma$celltype_integration <- gsub("VascEndo", "BEC", Colonic_Stroma$celltype_integration)
+```
+Check cell type annotations
+```{r}
+unique(Epi_Imm_Stro_colon$celltype_integration)
+unique(Colonic_Stroma$celltype_integration)
+unique(Fibroblasts_ctrl$celltype_integration)
+unique(Fibroblasts_DSS$celltype_integration)
+unique(Stromal_Colon$celltype_integration)
+```
+
+Covariates to consider:
+Age:
+- The datasets used mice in the age rande of 7-12 weeks (considered young)
+- Site not given in all datasets
+
+Create a column to use for integration that gives dataset and treatment as batch
+```{r}
+Fibroblasts_ctrl$Treatment <- "ctrl"
+Fibroblasts_DSS$Treatment <- "DSS"
+```
+
+
+
+```{r}
+
+Epi_Imm_Stro_colon$covariate <- paste0("Epi_Imm_Stro_colon", "_", Epi_Imm_Stro_colon$Treatment)
+Colonic_Stroma$covariate <- paste0("Colonic_Stroma", "_", Colonic_Stroma$Treatment)
+Fibroblasts_ctrl$covariate <- paste0("Fibroblasts_ctrl", "_", Fibroblasts_ctrl$Treatment)
+Fibroblasts_DSS$covariate <- paste0("Fibroblasts_DSS", "_", Fibroblasts_DSS$Treatment)
+Stromal_Colon$covariate <- paste0("Stromal_Colon", "_", Stromal_Colon$Treatment)
+
+
+Fibroblasts <- merge(Fibroblasts_ctrl, Fibroblasts_DSS, add.cell.ids = c("ctrl", "DSS"), merge.data = TRUE)
+```
+
+
+
+```{r}
+library(sceasy)
+library(Seurat)
+Epi_Imm_Stro_colon[["SCT3"]] <-as(object = Epi_Imm_Stro_colon[["SCT"]], Class = "Assay")
+Colonic_Stroma <- JoinLayers(Colonic_Stroma)
+Colonic_Stroma[["RNA3"]] <-as(object = Colonic_Stroma[["RNA"]], Class = "Assay")
+Fibroblasts_ctrl[["SCT3"]] <-as(object = Fibroblasts_ctrl[["SCT"]], Class = "Assay")
+Fibroblasts_DSS[["SCT3"]] <-as(object = Fibroblasts_DSS[["SCT"]], Class = "Assay")
+Stromal_Colon[["SCT3"]] <-as(object = Stromal_Colon[["SCT"]], Class = "Assay")
+
+
+Epi_Imm_Stro_colon_v3 <- Epi_Imm_Stro_colon
+library(Seurat)
+Epi_Imm_Stro_colon_v3 <- JoinLayers(Epi_Imm_Stro_colon_v3, assay = "RNA")
+#Epi_Imm_Stro_colon_v3[["RNA3"]] <-as(object = Epi_Imm_Stro_colon_v3[["RNA"]], Class = "Assay")
+
+#Epi_Imm_Stro_colon_v3@assays$SCT <- NULL
+
+DefaultAssay(Epi_Imm_Stro_colon_v3) <- "SCT3"
+
+assay_names <- names(Epi_Imm_Stro_colon_v3@assays)
+
+# Check current assay names
+print(assay_names)
+print(names(Epi_Imm_Stro_colon_v3@assays))
+
+
+# Rename 'SCT3' to 'SCTT'
+#if ("SCT3" %in% assay_names) {
+#  assay_names[assay_names == "SCT3"] <- "SCT"
+#  names(Epi_Imm_Stro_colon_v3@assays) <- assay_names
+#} else {
+#  stop("Assay 'SCT3' not found in the Seurat object.")
+#}
+
+# Verify the change
+print(names(Epi_Imm_Stro_colon_v3@assays))
+#Epi_Imm_Stro_colon_v3@assays$RNA <- NULL
+
+# Load the reticulate package
+library(reticulate)
+
+# Specify the path to the Python executable in the `mouseatlas` environment
+use_python("/Users/andson/miniconda3/envs/mouseatlas/bin/python", required = TRUE)
+
+# Verify that reticulate is using the correct Python environment
+py_config()
+library(sceasy)
+
+sceasy::convertFormat(Epi_Imm_Stro_colon_v3, assay = "SCT3", from="seurat", to="anndata",
+                       outFile='Epi_Imm_Stro_colon.h5ad')
+sceasy::convertFormat(Colonic_Stroma, assay = "RNA3", from="seurat", to="anndata",
+                       outFile='Colonic_Stroma.h5ad')
+sceasy::convertFormat(Fibroblasts_ctrl, assay = "SCT3", from="seurat", to="anndata",
+                       outFile='Fibroblasts_ctrl.h5ad')
+sceasy::convertFormat(Fibroblasts_DSS, assay = "SCT3", from="seurat", to="anndata",
+                       outFile='Fibroblasts_DSS.h5ad')
+sceasy::convertFormat(Fibroblasts, assay = "SCT3", from="seurat", to="anndata",
+                       outFile='Fibroblasts.h5ad')
+sceasy::convertFormat(Stromal_Colon, assay = "SCT3", from="seurat", to="anndata",
+                       outFile='Stromal_Colon.h5ad')
+
+```
+
+
+```{r}
+#Used scanpy to merge and load result
+ad_path <- "/Users/andson/Mouse_Atlas_Intestine/merged_LI.h5ad"
+sceasy::convertFormat(ad_path, from="anndata", to="seurat", outFile="merged_LI.rds")
+merged_LI <- readRDS("~/Mouse_Atlas_Intestine/merged_LI.rds")
+```
+
+
+2. Integrate.
+#Prepare data
+```{r}
+LI_list <- list(Epi_Imm_Stro_colon = Epi_Imm_Stro_colon, 
+                 Fibroblasts_ctrl = Fibroblasts_ctrl,Colonic_Stroma = Colonic_Stroma, Fibroblasts_DSS = Fibroblasts_DSS, Stromal_Colon = Stromal_Colon)
+
+
+#LI_OBJECT <- merge(Epi_Imm_Stro_colon, c(Colonic_Stroma, Fibroblasts_ctrl, Fibroblasts_DSS, Stromal_Colon),   add.cell.ids = c("Colonic_Stroma","Colonic_Stroma", "Fibroblasts_ctrl", "Fibroblasts_DSS", "Stromal_Colon"))
+```
+
+
+```{r}
+# get the variable genes from all the datasets.
+#hvgs_per_dataset <- lapply(LI_list, function(x) { x@assays$RNA@var.features })
+hvgs_per_dataset <- lapply(LI_list, function(x) { VariableFeatures(x) })
+
+
+merged_LI <- NormalizeData(merged_LI)
+merged_LI <- FindVariableFeatures(merged_LI, verbose = F)
+merged_LI <- ScaleData(merged_LI, vars.to.regress = c("nFeature_RNA", "percent_mito"), verbose = F)
+merged_LI <- RunPCA(merged_LI, verbose = F, npcs = 20)
+merged_LI <- RunUMAP(merged_LI, dims = 1:10, verbose = F)
+
+
+hvgs_per_dataset$all = VariableFeatures(merged_LI)
+temp <- unique(unlist(hvgs_per_dataset))
+overlap <- sapply( hvgs_per_dataset , function(x) { temp %in% x } )
+pheatmap::pheatmap(t(overlap*1),cluster_rows = F ,
+                   color = c("grey90","grey20"))
+
+```
+There are genes that are varaible in the "all" merged object but not in the individual dataets. These are mosr likely the genes driven by bathc effects.
+
+A better way to select features for integration is to combine the information on variable genes across the dataset.
+
+```{r}
+hvgs_all = SelectIntegrationFeatures(LI_list)
+hvgs_per_dataset$all_ranks = hvgs_all
+
+temp <- unique(unlist(hvgs_per_dataset))
+overlap <- sapply( hvgs_per_dataset , function(x) { temp %in% x } )
+pheatmap::pheatmap(t(overlap*1),cluster_rows = F ,
+                   color = c("grey90","grey20"))
+```
+
+
+Method 1. CCA
+
+```{r}
+alldata.anchors <- FindIntegrationAnchors(object.list = alldata.list, dims = 1:30,reduction = "cca", anchor.features = hvgs_all)
+
+alldata.int <- IntegrateData(anchorset = alldata.anchors, dims = 1:30, new.assay.name = "CCA")
+
+names(alldata.int@assays)
+#Run Dimensionality reduction on integrated space
+alldata.int <- ScaleData(alldata.int, verbose = FALSE)
+alldata.int <- RunPCA(alldata.int, npcs = 30, verbose = FALSE)
+alldata.int <- RunUMAP(alldata.int, dims = 1:30)
+
+wrap_plots(
+  DimPlot(alldata, reduction = "pca", group.by = "orig.ident")+NoAxes()+ggtitle("PCA raw_data"),
+  DimPlot(alldata, reduction = "umap", group.by = "orig.ident")+NoAxes()+ggtitle("UMAP raw_data"),
+  DimPlot(alldata.int, reduction = "pca", group.by = "orig.ident")+NoAxes()+ggtitle("PCA integrated"),
+  DimPlot(alldata.int, reduction = "umap", group.by = "orig.ident")+NoAxes()+ggtitle("UMAP integrated"),
+  ncol = 3
+) + plot_layout(guides = "collect")
+
+
+```
+
+2. Harmony
+```{r}
+merged_LI@active.assay = "RNA"
+VariableFeatures(merged_LI) = hvgs_all
+#merged_LI = ScaleData(merged_LI, vars.to.regress = c("percent_mito", "nFeature_RNA"))
+merged_LI = RunPCA(merged_LI, reduction.name = "pca_harmony")
+
+library(harmony)
+
+merged_LI <- RunHarmony(
+  merged_LI,
+  group.by.vars = "LI_merged",
+  reduction.use = "pca_harmony",
+  dims.use = 1:50,
+  assay.use = "RNA")
+
+merged_LI <- RunUMAP(merged_LI, dims = 1:50, reduction = "harmony", reduction.name = "umap_harmony")
+
+library(ggplot2)
+DimPlot(merged_LI, reduction = "umap_harmony", group.by = "LI_merged") + NoAxes() + ggtitle("Harmony UMAP") + facet_wrap( merged_LI$LI_merged)
+
+```
+
+
+Mehthod 3: Scanorama
+```{r}
+assaylist <- list()
+genelist <- list()
+# Initialize empty lists for storing assay data and gene lists
+assaylist <- list()
+genelist <- list()
+
+# Iterate over the elements in alldata.list
+for (i in 1:length(LI_list)) {
+  
+  # Check if the object is "Colonic_Stroma"
+  if (names(LI_list)[i] == "Colonic_Stroma") {
+    # Use RNA3 assay for "Colonic_Stroma"
+    assaylist[[i]] <- t(as.matrix(GetAssayData(LI_list[[i]], "RNA3")[hvgs_all,]))
+  } else {
+    # Use SCT3 assay for the rest
+    assaylist[[i]] <- t(as.matrix(GetAssayData(LI_list[[i]], "SCT3")[hvgs_all,]))
+  }
+  
+  # Store the hvgs_all genes in the genelist
+  genelist[[i]] <- hvgs_all
+}
+
+# Apply lapply to check the dimensions of each element in assaylist
+lapply(assaylist, dim)
+```
+
+Then, we use the scanorama function through reticulate. The integrated data is added back into the Seurat object as a new Reduction.
+```{r}
+
+# Activate scanorama Python venv
+scanorama <- reticulate::import("scanorama")
+
+integrated.data <- scanorama$integrate(datasets_full = assaylist,
+                                       genes_list = genelist )
+
+# Now we create a new dim reduction object in the format that Seurat uses
+intdimred <- do.call(rbind, integrated.data[[1]])
+colnames(intdimred) <- paste0("PC_", 1:100)
+rownames(intdimred) <- colnames(merged_LI)
+
+# Add standard deviations in order to draw Elbow Plots in Seurat
+stdevs <- apply(intdimred, MARGIN = 2, FUN = sd)
+
+# Create a new dim red object.
+merged_LI[["scanorama"]] <- CreateDimReducObject(
+  embeddings = intdimred,
+  stdev      = stdevs,
+  key        = "PC_",
+  assay      = "RNA")
+
+#Here we use all PCs computed from Scanorama for UMAP calculation
+merged_LI <- RunUMAP(merged_LI, dims = 1:100, reduction = "scanorama",reduction.name = "umap_scanorama")
+
+DimPlot(merged_LI, reduction = "umap_scanorama", group.by = "dataset_origin") + NoAxes() + ggtitle("Harmony UMAP")
+DimPlot(merged_LI, reduction = "umap_scanorama", group.by = "dataset_origin") + NoAxes() + ggtitle("Harmony UMAP") + facet_wrap( merged_LI$dataset_origin)
+DimPlot(merged_LI, reduction = "umap_scanorama", group.by = "covariate") + NoAxes() + ggtitle("Harmony UMAP") + facet_wrap( merged_LI$dataset_origin)
+
+
+```
+
+Overview of methods:
+```{r}
+p1 <- DimPlot(merged_LI, reduction = "umap", group.by = "dataset_origin") + ggtitle("UMAP raw_data")
+#p2 <- DimPlot(alldata.int, reduction = "umap", group.by = "dataset_origin") + ggtitle("UMAP CCA")
+p3 <- DimPlot(merged_LI, reduction = "umap_harmony", group.by = "dataset_origin") + ggtitle("UMAP Harmony")
+p4 <- DimPlot(merged_LI, reduction = "umap_scanorama", group.by = "dataset_origin")+ggtitle("UMAP Scanorama")
+
+library(patchwork)
+wrap_plots(p1, p3, p4, nrow = 2) + plot_layout(guides = "collect")
+```
+
+Harmony is the one that makes most sense as Epi_imm_Stro_colon is the only one wiht immune cells, so they do not integrate to other sets that do not have them
+
+Covariates:
+1. Tissue location
+2. Age?
+3. Celltype
+4. Dataset
+
+
+```{r}
+#See variable features in the whole dataset
+hvgs_per_dataset$all = VariableFeatures(alldata)
+
+temp <- unique(unlist(hvgs_per_dataset))
+overlap <- sapply( hvgs_per_dataset , function(x) { temp %in% x } )
+pheatmap::pheatmap(t(overlap*1),cluster_rows = F ,
+                   color = c("grey90","grey20"))
+```
+
+```{r}
+#Used scanpy to merge and load result
+#Used scanpy to merge and load result
+ad_path <- "/Users/andson/Mouse_Atlas_Intestine/merged_LI_scib.h5ad"
+sceasy::convertFormat(ad_path, from="anndata", to="seurat", outFile="merged_LI_scib.rds")
+merged_LI_scib <- readRDS("~/Mouse_Atlas_Intestine/merged_LI_scib.rds")
+```
+```{r}
+merged_LI_scib <- RunUMAP(merged_LI_scib, dims = 1:50, reduction = "Unintegrated", reduction.name = "umap_Unintegrated")
+#merged_LI_scib <- RunUMAP(merged_LI_scib, dims = 1:50, reduction = "harmony", reduction.name = "umap_harmony")
+merged_LI_scib <- RunUMAP(merged_LI_scib, dims = 1:20, reduction = "scANVI", reduction.name = "umap_scANVI")
+merged_LI_scib <- RunUMAP(merged_LI_scib, dims = 1:30, reduction = "scVI", reduction.name = "umap_scVI")
+merged_LI_scib <- RunUMAP(merged_LI_scib, dims = 1:30, reduction = "Harmony", reduction.name = "umap_Harmony")
+merged_LI_scib <- RunUMAP(merged_LI_scib, dims = 1:30, reduction = "Scanorama", reduction.name = "umap_Scanorama")
+```
+
+```{r}
+p1 <- DimPlot(merged_LI_scib, reduction = "umap_Unintegrated", group.by = "dataset_origin") + ggtitle("Unintegrated")
+p2 <- DimPlot(merged_LI_scib, reduction = "umap_scANVI", group.by = "dataset_origin") + ggtitle("UMAP Scanvi")
+p3 <- DimPlot(merged_LI_scib, reduction = "umap_scVI", group.by = "dataset_origin")+ggtitle("UMAP scVI")
+p4 <- DimPlot(merged_LI_scib, reduction = "umap_Harmony", group.by = "dataset_origin")+ggtitle("UMAP Harmony")
+p5 <- DimPlot(merged_LI_scib, reduction = "umap_Scanorama", group.by = "dataset_origin")+ggtitle("UMAP Scanorama")
+
+library(patchwork)
+wrap_plots(p1, p2, p3, p4, p5, nrow = 2) + plot_layout(guides = "collect")
+```
+
+
