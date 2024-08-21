@@ -3,6 +3,7 @@ This repository contains scripts used for creating a Mouse Atlas by integrating 
 
 ## **Files and Scripts**
 **Mouse Atlas Data Mining.xlsx**: Lists all datasets to be integrated for the Atlas.
+
 **Individual_datasets_analysis.Rmd**: Contains scripts for quality control and annotation of each dataset.
 
 ## **Integration Methods**
