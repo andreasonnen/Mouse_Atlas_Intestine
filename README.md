@@ -9,11 +9,9 @@ This repository contains scripts used for creating a Mouse Atlas by integrating 
 ## **Integration Methods**
 Various integration methods have been evaluated:
 
-Scanvi, Scanorama, and scVI are recommended for complex integrations.
-Harmony is suitable for simpler integrations but may require parameter adjustments for more complex datasets.
+[Scanvi](https://docs.scvi-tools.org/en/stable/user_guide/models/scanvi.html), [Scanorama](https://github.com/brianhie/scanorama) and [scVI](https://docs.scvi-tools.org/en/stable/user_guide/models/scanvi.html) are recommended for more complex integrations while Harmony works fine for more simple ones.
 Refer to the benchmark paper for more details: Luecken, M.D., Büttner, M., Chaichoompu, K. et al. Benchmarking atlas-level data integration in single-cell genomics. Nat Methods 19, 41–50 (2022). DOI: 10.1038/s41592-021-01336-8
 
-Scanvi, scanorama and scvi re recommended fro more complex integrations while Harmony works fine for more simple ones.
 
 For performance comparison of methods, see: **Scib_integration_tests.ipynb**
 
