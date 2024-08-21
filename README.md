@@ -24,7 +24,7 @@ For integration of datasets obtained from the Large Intestine Scanvi performed b
 When additional two datasets from the small intestine were added:
 Scanvi remained the best, while Scanorama dropped to third place. Harmony was effective with standard parameters but less so with the small intestine datasets. Further tuning was needed.
 
-![Benchmark plot](images/Images/SI_LI_benchmark_plot.png)
+![Benchmark plot](Images/SI_LI_benchmark_plot.png)
 ![Umap per method comparison](Images/SI_LI_Umap_comparison_tweaked_harmony.jpeg)
 
 
