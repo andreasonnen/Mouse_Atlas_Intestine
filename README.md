@@ -1,5 +1,5 @@
 # **Mouse Atlas Project**
-This repository contains scripts and data for creating a Mouse Atlas by integrating datasets from the small and large intestines.
+This repository contains scripts used for creating a Mouse Atlas by integrating datasets from the small and large intestines.
 
 ## **Files and Scripts**
 **Mouse Atlas Data Mining.xlsx**: Lists all datasets to be integrated for the Atlas.
